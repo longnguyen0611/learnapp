@@ -2,15 +2,22 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card, CardContent, CardDescription, CardFooter,
+  CardHeader, CardTitle
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useWords } from "@/lib/vocabulary"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 export function VocabularyList() {
-  const { words, fetchWords, deleteWord } = useWords()
+  const { words, fetchWords, deleteWord, addWord } = useWords()
   const [searchTerm, setSearchTerm] = useState("")
+  const [showModal, setShowModal] = useState(false)
+  const [english, setEnglish] = useState("")
+  const [german, setGerman] = useState("")
   const { toast } = useToast()
 
   useEffect(() => {
@@ -25,10 +32,28 @@ export function VocabularyList() {
     })
   }
 
+  const handleAddWord = async () => {
+    if (!english.trim() || !german.trim()) {
+      toast({ title: "Please fill in both fields." })
+      return
+    }
+
+    await addWord(english, "english", german)
+    toast({
+      title: "Word added",
+      description: `"${english}" has been added to your vocabulary.`,
+    })
+
+    setEnglish("")
+    setGerman("")
+    setShowModal(false)
+    fetchWords()
+  }
+
   const filteredWords = words.filter(
     (word) =>
       word.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      word.translation.toLowerCase().includes(searchTerm.toLowerCase()),
+      word.translation.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -40,7 +65,32 @@ export function VocabularyList() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
+        <Button onClick={() => setShowModal(true)}>
+          + Add Word
+        </Button>
       </div>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a new word</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium">English</label>
+              <Input value={english} onChange={(e) => setEnglish(e.target.value)} placeholder="Enter English word" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">German</label>
+              <Input value={german} onChange={(e) => setGerman(e.target.value)} placeholder="Enter German translation" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button onClick={handleAddWord}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {filteredWords.length === 0 ? (
         <Card>
@@ -48,7 +98,7 @@ export function VocabularyList() {
             <p className="text-muted-foreground">
               {searchTerm
                 ? "No matching words found."
-                : "Your vocabulary notebook is empty. Highlight text in the practice section to add words."}
+                : "Your vocabulary notebook is empty. Add a new word to get started."}
             </p>
           </CardContent>
         </Card>
@@ -64,7 +114,9 @@ export function VocabularyList() {
                 <p>{word.translation}</p>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <div className="text-xs text-muted-foreground">{new Date(word.dateAdded).toLocaleDateString()}</div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(word.dateAdded).toLocaleDateString()}
+                </div>
                 <Button variant="ghost" size="icon" onClick={() => handleDeleteWord(word._id!)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
