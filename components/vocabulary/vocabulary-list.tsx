@@ -50,6 +50,31 @@ export function VocabularyList() {
     fetchWords()
   }
 
+  const handleAddImage = async (wordId: string) => {
+    const fileInput = document.createElement("input")
+    fileInput.type = "file"
+    fileInput.accept = "image/*"
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      const formData = new FormData()
+      formData.append("image", file)
+
+      await fetch(`/api/words/${wordId}/image`, {
+        method: "PUT",
+        headers: {
+          "x-user-id": "user-id-cua-ban",
+        },
+        body: formData,
+      })
+
+      toast({ title: "Image added" })
+      fetchWords()
+    }
+    fileInput.click()
+  }
+
   const filteredWords = words.filter(
     (word) =>
       word.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,9 +135,32 @@ export function VocabularyList() {
                 <CardTitle>{word.text}</CardTitle>
                 <CardDescription>{word.language === "english" ? "English" : "German"}</CardDescription>
               </CardHeader>
+
               <CardContent>
-                <p>{word.translation}</p>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-base">{word.translation}</p>
+                    {!word.imageUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => handleAddImage(word._id!)}
+                      >
+                        + Add Image
+                      </Button>
+                    )}
+                  </div>
+                  {word.imageUrl && (
+                    <img
+                      src={word.imageUrl}
+                      alt="word illustration"
+                      className="w-48 h-48 object-cover rounded-xl"
+                    />
+                  )}
+                </div>
               </CardContent>
+
               <CardFooter className="flex justify-between">
                 <div className="text-xs text-muted-foreground">
                   {new Date(word.dateAdded).toLocaleDateString()}

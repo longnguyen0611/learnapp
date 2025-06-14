@@ -7,6 +7,7 @@ interface Word {
   language: string
   translation: string
   dateAdded: string
+  imageUrl?: string
 }
 
 interface WordsStore {
