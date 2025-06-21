@@ -11,11 +11,13 @@ import { Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useWords } from "@/lib/vocabulary"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import LimitReachedModal from "@/components/noti/LimitReachedModal"
 
 export function VocabularyList() {
   const { words, fetchWords, deleteWord, addWord } = useWords()
   const [searchTerm, setSearchTerm] = useState("")
   const [showModal, setShowModal] = useState(false)
+  const [showLimitModal, setShowLimitModal] = useState(false) 
   const [english, setEnglish] = useState("")
   const [german, setGerman] = useState("")
   const { toast } = useToast()
@@ -31,23 +33,48 @@ export function VocabularyList() {
       description: "The word has been removed from your vocabulary notebook.",
     })
   }
-
   const handleAddWord = async () => {
     if (!english.trim() || !german.trim()) {
-      toast({ title: "Please fill in both fields." })
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng điền đầy đủ cả từ tiếng Anh và tiếng Đức",
+        variant: "destructive",
+      })
       return
     }
 
-    await addWord(english, "english", german)
-    toast({
-      title: "Word added",
-      description: `"${english}" has been added to your vocabulary.`,
-    })
+    try {
+      const result = await addWord(english, "english", german)
 
-    setEnglish("")
-    setGerman("")
-    setShowModal(false)
-    fetchWords()
+      if (!result.success) {
+        if (result.error === "LIMIT_REACHED") {
+          setShowLimitModal(true)
+        } else {
+          toast({
+            title: "Lỗi",
+            description: result.message || "Không thể thêm từ. Vui lòng thử lại.",
+            variant: "destructive",
+          })
+        }
+        return
+      }
+
+      toast({
+        title: "Thành công",
+        description: `Đã thêm từ "${english}" vào danh sách.`,
+      })
+
+      setEnglish("")
+      setGerman("")
+      setShowModal(false)
+    } catch (error) {
+      console.error("Lỗi khi thêm từ:", error)
+      toast({
+        title: "Lỗi không xác định",
+        description: "Đã xảy ra lỗi. Vui lòng thử lại.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleAddImage = async (wordId: string) => {
@@ -116,6 +143,12 @@ export function VocabularyList() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ✅ Modal hiển thị khi đạt giới hạn */}
+      <LimitReachedModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+      />
 
       {filteredWords.length === 0 ? (
         <Card>

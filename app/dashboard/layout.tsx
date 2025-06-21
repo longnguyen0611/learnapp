@@ -2,6 +2,9 @@ import type React from "react"
 import { DashboardNav } from "@/components/dashboard/dashboard-nav"
 import { UserNav } from "@/components/dashboard/user-nav"
 import { MobileNav } from "@/components/dashboard/mobile-nav"
+import NotificationBell from "@/components/noti/NotificationBell"
+import { Toaster } from "@/components/ui/toaster" 
+import { PomodoroTimer } from "@/components/noti/pomodoro-timer"
 
 export default function DashboardLayout({
   children,
@@ -16,10 +19,15 @@ export default function DashboardLayout({
             <DashboardNav />
           </div>
           <MobileNav />
-          <UserNav />
+          <div className="flex items-center gap-4">
+            <PomodoroTimer /> {/* ⏱ thêm timer tại đây */}
+            <NotificationBell />
+            <UserNav />
+          </div>
         </div>
       </header>
       <main className="flex-1">{children}</main>
+      <Toaster />
     </div>
   )
 }

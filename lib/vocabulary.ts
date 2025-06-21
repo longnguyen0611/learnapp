@@ -10,10 +10,14 @@ interface Word {
   imageUrl?: string
 }
 
+type AddWordResult =
+  | { success: true; word: Word }
+  | { success: false; error: string; message: string }
+
 interface WordsStore {
   words: Word[]
   fetchWords: () => Promise<void>
-  addWord: (text: string, language: string, translation: string) => Promise<void>
+  addWord: (text: string, language: string, translation: string) => Promise<AddWordResult>
   deleteWord: (id: string) => Promise<void>
 }
 
@@ -22,8 +26,7 @@ export const useWords = create<WordsStore>((set, get) => ({
 
   fetchWords: async () => {
     try {
-      // gửi userId trong header hoặc lấy từ auth store
-      const userId = "user-id-cua-ban" // hoặc lấy từ useAuth store
+      const userId = "user-id-cua-ban"
       const res = await fetch("/api/words", {
         method: "GET",
         headers: {
@@ -49,11 +52,26 @@ export const useWords = create<WordsStore>((set, get) => ({
         },
         body: JSON.stringify({ text, language, translation }),
       })
-      if (!res.ok) throw new Error("Failed to add word")
-      const newWord = await res.json()
-      set((state) => ({ words: [...state.words, newWord] }))
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        return {
+          success: false,
+          error: data.error || "UNKNOWN_ERROR",
+          message: data.message || "Đã xảy ra lỗi",
+        }
+      }
+
+      set((state) => ({ words: [...state.words, data] }))
+      return { success: true, word: data }
     } catch (error) {
-      console.error(error)
+      console.error("Error in addWord:", error)
+      return {
+        success: false,
+        error: "UNKNOWN_ERROR",
+        message: "Đã xảy ra lỗi. Vui lòng thử lại.",
+      }
     }
   },
 
@@ -67,7 +85,9 @@ export const useWords = create<WordsStore>((set, get) => ({
         },
       })
       if (res.status !== 204) throw new Error("Failed to delete word")
-      set((state) => ({ words: state.words.filter((w) => w._id !== id) }))
+      set((state) => ({
+        words: state.words.filter((w) => w._id !== id),
+      }))
     } catch (error) {
       console.error(error)
     }
